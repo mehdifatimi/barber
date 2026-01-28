@@ -2,7 +2,6 @@
 
 import { useNotifications } from '@/hooks/useNotifications';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2, CheckCheck, Trash2, Calendar } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { useRouter } from 'next/navigation';
@@ -48,7 +47,7 @@ export function NotificationList() {
                 )}
             </div>
 
-            <ScrollArea className="h-[400px]">
+            <div className="h-[400px] overflow-y-auto">
                 {notifications.length === 0 ? (
                     <div className="flex flex-col items-center justify-center p-8 text-center">
                         <Calendar className="w-12 h-12 text-muted-foreground mb-2" />
@@ -95,7 +94,7 @@ export function NotificationList() {
                         ))}
                     </div>
                 )}
-            </ScrollArea>
+            </div>
         </div>
     );
 }

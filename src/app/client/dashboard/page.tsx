@@ -42,7 +42,7 @@ export default function ClientDashboard() {
 
     async function fetchData() {
         try {
-            let barbersResult = await supabase
+            let barbersResult: any = await supabase
                 .from('barbers')
                 .select(`
                     id,
