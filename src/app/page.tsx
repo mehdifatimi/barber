@@ -23,6 +23,7 @@ export default function LandingPage() {
             <span className="text-2xl font-bold tracking-tighter">BarberApp</span>
           </Link>
           <div className="flex gap-4 sm:gap-6 items-center font-medium">
+            <Link href="/portfolio" className="hidden sm:block hover:text-primary transition-colors">Style Gallery</Link>
             {!loading && (
               <>
                 {user ? (
@@ -68,6 +69,10 @@ export default function LandingPage() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/signup?role=client" className="px-8 py-4 bg-primary text-black rounded-xl font-black text-lg hover:scale-105 transition-transform">
               BOOK AN APPOINTMENT
+            </Link>
+            <Link href="/portfolio" className="px-8 py-4 bg-white/5 border border-white/10 text-white rounded-xl font-black text-lg hover:bg-white/10 transition-all flex items-center justify-center gap-2">
+              <Scissors className="w-5 h-5" />
+              DISCOVER STYLES
             </Link>
             <Link href="/signup?role=barber" className="px-8 py-4 bg-transparent border-2 border-primary text-primary rounded-xl font-black text-lg hover:bg-primary/5 transition-all">
               ARE YOU A BARBER?

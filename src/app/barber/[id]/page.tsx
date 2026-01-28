@@ -6,7 +6,7 @@ import DashboardLayout from '@/components/layout/dashboard-layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Star, MapPin, Clock, Scissors, ChevronRight, ArrowLeft, Loader2, User, MessageSquare } from 'lucide-react';
+import { Star, MapPin, Clock, Scissors, ChevronRight, ArrowLeft, Loader2, User, MessageSquare, Award, MessageSquareReply } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -267,11 +267,26 @@ export default function BarberProfileView({ params }: { params: Promise<{ id: st
                                     </div>
                                 </div>
                             </div>
-                            <div className="px-5 sm:px-8 pb-6 sm:pb-8 border-t border-border/50 pt-6 sm:pt-8">
-                                <h3 className="text-lg font-bold mb-3 uppercase tracking-wider text-primary">About</h3>
-                                <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
-                                    {barber.bio || "This barber hasn't added a biography yet. They are dedicated to providing excellent grooming services."}
-                                </p>
+                            <div className="px-5 sm:px-8 pb-6 sm:pb-8 border-t border-border/50 pt-6 sm:pt-8 space-y-6">
+                                <div>
+                                    <h3 className="text-lg font-bold mb-3 uppercase tracking-wider text-primary">About</h3>
+                                    <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
+                                        {barber.bio || "This barber hasn't added a biography yet. They are dedicated to providing excellent grooming services."}
+                                    </p>
+                                </div>
+
+                                {/* Loyalty Program Banner */}
+                                <div className="bg-orange-500/10 border border-orange-500/20 p-6 rounded-[2rem] flex flex-col sm:flex-row items-center gap-6 group hover:bg-orange-500/[0.15] transition-all">
+                                    <div className="w-16 h-16 bg-orange-500 flex items-center justify-center rounded-2xl shadow-lg shadow-orange-500/20 shrink-0 group-hover:scale-110 transition-transform">
+                                        <Award className="w-8 h-8 text-white" />
+                                    </div>
+                                    <div className="text-center sm:text-left">
+                                        <h4 className="text-xl font-black text-orange-500 uppercase tracking-tight leading-none mb-2">Earn Loyalty Points!</h4>
+                                        <p className="text-muted-foreground font-medium text-sm">
+                                            Reward yourself! Get **10 points** for every completed booking. Collect 100 points to unlock exclusive rewards with {barber.profiles.full_name}.
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
                         </Card>
 
@@ -422,6 +437,23 @@ export default function BarberProfileView({ params }: { params: Promise<{ id: st
                                                 <p className="text-foreground/80 leading-relaxed italic">
                                                     "{review.comment}"
                                                 </p>
+
+                                                {review.barber_reply && (
+                                                    <div className="mt-4 pt-4 border-t border-border/40 bg-primary/[0.02] p-4 rounded-xl space-y-2">
+                                                        <div className="flex justify-between items-center text-[10px] uppercase font-black tracking-widest text-primary">
+                                                            <div className="flex items-center gap-1.5">
+                                                                <MessageSquareReply className="w-3 h-3" />
+                                                                <span>Barber's Response</span>
+                                                            </div>
+                                                            <span className="text-muted-foreground/60 font-medium">
+                                                                {format(new Date(review.replied_at), 'MMM d, yyyy')}
+                                                            </span>
+                                                        </div>
+                                                        <p className="text-sm italic text-foreground/70 leading-relaxed">
+                                                            "{review.barber_reply}"
+                                                        </p>
+                                                    </div>
+                                                )}
                                             </CardContent>
                                         </Card>
                                     ))

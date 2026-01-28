@@ -58,12 +58,14 @@ export default function DashboardLayout({
             { label: 'Stats', icon: BarChart, href: '/admin/stats' },
             { label: 'Categories', icon: Settings, href: '/admin/categories' },
             { label: 'All Bookings', icon: Calendar, href: '/admin/bookings' },
+            { label: 'Style Gallery', icon: Scissors, href: '/portfolio' },
         ],
         barber: [
             { label: 'Dashboard', icon: LayoutDashboard, href: '/barber' },
             { label: 'My Calendar', icon: Calendar, href: '/barber/calendar' },
             { label: 'My Bookings', icon: Calendar, href: '/barber/bookings' },
             { label: 'Services', icon: Scissors, href: '/barber/services' },
+            { label: 'Style Gallery', icon: Scissors, href: '/portfolio' },
             { label: 'My Reviews', icon: BarChart, href: '/barber/reviews' },
             { label: 'Profile', icon: Settings, href: '/barber/profile' },
         ],
@@ -71,6 +73,7 @@ export default function DashboardLayout({
             { label: 'Dashboard', icon: LayoutDashboard, href: '/client/dashboard' },
             { label: 'My Bookings', icon: Calendar, href: '/client/dashboard/bookings' },
             { label: 'Favorites', icon: LayoutDashboard, href: '/client/dashboard/favorites' },
+            { label: 'Style Gallery', icon: Scissors, href: '/portfolio' },
         ]
     };
 

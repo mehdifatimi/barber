@@ -11,8 +11,11 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Search, MapPin, Star, Filter, Loader2, Scissors, User, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
+import { useAuth } from '@/components/providers/auth-provider';
+import LoyaltyOverview from '@/components/loyalty/loyalty-overview';
 
 export default function ClientDashboard() {
+    const { user } = useAuth();
     const [barbers, setBarbers] = useState<any[]>([]);
     const [categories, setCategories] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -146,6 +149,9 @@ export default function ClientDashboard() {
                         <p className="text-muted-foreground text-lg">Book with the best barbers in your area.</p>
                     </div>
                 </div>
+
+                {/* Loyalty Overview */}
+                <LoyaltyOverview clientId={user?.id || ''} />
 
                 {/* Search and Filters */}
                 <div className="flex flex-col lg:flex-row gap-4">

@@ -9,6 +9,15 @@ import DashboardLayout from '@/components/layout/dashboard-layout';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Loader2, TrendingUp, Calendar, Scissors, Star } from 'lucide-react';
 import { format, subDays, startOfDay, isWithinInterval } from 'date-fns';
+import { Download, FileDown, FileText, ChevronDown } from 'lucide-react';
+import { toast } from 'sonner';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from '@/components/ui/button';
 import { RevenueTrendChart, TopServicesChart, BusyHoursChart } from '@/components/barber/analytics-charts';
 
 export default function BarberDashboard() {
@@ -26,6 +35,7 @@ export default function BarberDashboard() {
         hours: any[];
     }>({ revenue: [], services: [], hours: [] });
     const [loading, setLoading] = useState(true);
+    const [exporting, setExporting] = useState(false);
 
     useEffect(() => {
         if (user) {
@@ -127,6 +137,64 @@ export default function BarberDashboard() {
         }
     }
 
+    async function exportToCSV() {
+        setExporting(true);
+        try {
+            // Fetch ALL completed bookings for the report
+            const { data: allBookings, error } = await supabase
+                .from('bookings')
+                .select(`
+                    id,
+                    start_time,
+                    status,
+                    total_price,
+                    profiles:client_id(full_name),
+                    services:service_id(name)
+                `)
+                .eq('barber_id', user?.id)
+                .eq('status', 'completed')
+                .order('start_time', { ascending: false });
+
+            if (error) throw error;
+            if (!allBookings || allBookings.length === 0) {
+                toast.error('No completed bookings to export');
+                return;
+            }
+
+            // Create CSV header
+            const headers = ['Date', 'Client', 'Service', 'Amount (DH)', 'Status'];
+            const rows = allBookings.map((b: any) => [
+                format(new Date(b.start_time), 'yyyy-MM-dd HH:mm'),
+                (Array.isArray(b.profiles) ? b.profiles[0]?.full_name : b.profiles?.full_name) || 'Anonymous',
+                (Array.isArray(b.services) ? b.services[0]?.name : b.services?.name) || 'Unknown',
+                b.total_price || 0,
+                b.status
+            ]);
+
+            const csvContent = [
+                headers.join(','),
+                ...rows.map(r => r.map(cell => `"${cell}"`).join(','))
+            ].join('\n');
+
+            // Download file
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.setAttribute('href', url);
+            link.setAttribute('download', `revenue_report_${format(new Date(), 'yyyy_MM_dd')}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            toast.success('Report exported successfully');
+        } catch (error) {
+            console.error('Export error:', error);
+            toast.error('Failed to export report');
+        } finally {
+            setExporting(false);
+        }
+    }
+
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-[400px]">
@@ -138,11 +206,47 @@ export default function BarberDashboard() {
     return (
         <DashboardLayout role="barber">
             <div className="space-y-8">
-                <div>
-                    <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-                        Barber Dashboard
-                    </h1>
-                    <p className="text-muted-foreground mt-2 text-lg">Welcome back! Here's what's happening today.</p>
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                            Barber Dashboard
+                        </h1>
+                        <p className="text-muted-foreground mt-2 text-lg">Welcome back! Here's what's happening today.</p>
+                    </div>
+
+                    <div className="flex gap-2">
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button className="rounded-2xl gap-2 h-12 px-6 shadow-xl shadow-primary/10 transition-all hover:scale-105">
+                                    {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                                    Export Accounts
+                                    <ChevronDown className="w-4 h-4 opacity-50" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-48 rounded-2xl border-border/50 shadow-2xl p-2">
+                                <DropdownMenuItem
+                                    onClick={exportToCSV}
+                                    className="rounded-xl flex items-center gap-3 p-3 focus:bg-primary/10 focus:text-primary cursor-pointer"
+                                >
+                                    <FileDown className="w-4 h-4" />
+                                    <div className="flex flex-col">
+                                        <span className="font-bold">Export CSV</span>
+                                        <span className="text-[10px] opacity-60">Best for Excel</span>
+                                    </div>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                    onClick={() => window.print()}
+                                    className="rounded-xl flex items-center gap-3 p-3 focus:bg-primary/10 focus:text-primary cursor-pointer"
+                                >
+                                    <FileText className="w-4 h-4" />
+                                    <div className="flex flex-col">
+                                        <span className="font-bold">Print Summary</span>
+                                        <span className="text-[10px] opacity-60">PDF / Print View</span>
+                                    </div>
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -202,11 +306,15 @@ export default function BarberDashboard() {
                                     <div key={booking.id} className="flex items-center justify-between p-6 hover:bg-muted/20 transition-colors">
                                         <div className="flex items-center gap-4">
                                             <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary">
-                                                {booking.profiles?.full_name?.charAt(0)}
+                                                {((Array.isArray(booking.profiles) ? booking.profiles[0]?.full_name : booking.profiles?.full_name) || 'U').charAt(0)}
                                             </div>
                                             <div>
-                                                <p className="font-semibold">{booking.profiles?.full_name}</p>
-                                                <p className="text-sm text-muted-foreground">{booking.services?.name}</p>
+                                                <p className="font-semibold">
+                                                    {(Array.isArray(booking.profiles) ? booking.profiles[0]?.full_name : booking.profiles?.full_name) || 'Verified Client'}
+                                                </p>
+                                                <p className="text-sm text-muted-foreground">
+                                                    {(Array.isArray(booking.services) ? booking.services[0]?.name : booking.services?.name) || 'Haircut'}
+                                                </p>
                                             </div>
                                         </div>
                                         <div className="text-right">
@@ -223,6 +331,67 @@ export default function BarberDashboard() {
                             </div>
                         </CardContent>
                     </Card>
+                </div>
+
+                {/* --- PRINTABLE STATEMENT (Hidden on screen) --- */}
+                <div className="hidden print:block p-10 bg-white text-black min-h-screen">
+                    <div className="flex justify-between items-start border-b-2 border-primary pb-6 mb-8">
+                        <div>
+                            <h2 className="text-3xl font-black text-primary uppercase tracking-tighter">Business Statement</h2>
+                            <p className="text-sm text-gray-500 font-bold uppercase tracking-widest mt-1">Generated on {format(new Date(), 'PPP')}</p>
+                        </div>
+                        <div className="text-right">
+                            <p className="text-xl font-bold">{user?.user_metadata?.full_name}</p>
+                            <p className="text-sm text-gray-500">Professional Barber Portfolio</p>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-8 mb-12">
+                        <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100">
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Revenue</p>
+                            <p className="text-2xl font-black">{stats.totalRevenue} DH</p>
+                        </div>
+                        <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100">
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Appointments</p>
+                            <p className="text-2xl font-black">{recentBookings.length}+</p>
+                        </div>
+                        <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100">
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Avg Rating</p>
+                            <p className="text-2xl font-black">{stats.avgRating} / 5.0</p>
+                        </div>
+                    </div>
+
+                    <div className="space-y-4">
+                        <h3 className="text-lg font-bold border-b pb-2">Recent Completed Transactions</h3>
+                        <table className="w-full text-left">
+                            <thead>
+                                <tr className="text-[10px] font-black text-gray-400 uppercase border-b bg-gray-50">
+                                    <th className="py-3 px-4">Date</th>
+                                    <th className="py-3 px-4">Client</th>
+                                    <th className="py-3 px-4">Service</th>
+                                    <th className="py-3 px-4 text-right">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y text-sm">
+                                {recentBookings.filter(b => b.status === 'completed').map((booking) => (
+                                    <tr key={booking.id}>
+                                        <td className="py-3 px-4">{format(new Date(booking.start_time), 'MMM d, yyyy')}</td>
+                                        <td className="py-3 px-4 font-bold">
+                                            {(Array.isArray(booking.profiles) ? booking.profiles[0]?.full_name : booking.profiles?.full_name) || 'Verified Client'}
+                                        </td>
+                                        <td className="py-3 px-4">
+                                            {(Array.isArray(booking.services) ? booking.services[0]?.name : booking.services?.name) || 'Haircut'}
+                                        </td>
+                                        <td className="py-3 px-4 text-right font-black">{booking.total_price} DH</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div className="mt-20 pt-8 border-t text-center text-[10px] text-gray-400 font-bold uppercase tracking-widest">
+                        Thank you for using our Barber Management Platform
+                    </div>
                 </div>
             </div>
         </DashboardLayout>

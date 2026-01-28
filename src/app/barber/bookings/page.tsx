@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Loader2, Calendar, Clock, User, CheckCircle, XCircle, MoreVertical } from 'lucide-react';
+import { Loader2, Calendar, Clock, User, CheckCircle, XCircle, MoreVertical, Award } from 'lucide-react';
 import { format } from 'date-fns';
 import {
     DropdownMenu,
@@ -65,7 +65,8 @@ function BookingsList() {
                 .select(`
                     *,
                     profiles:client_id (full_name, avatar_url),
-                    services:service_id (name, price, duration_minutes)
+                    services:service_id (name, price, duration_minutes),
+                    loyalty_points (points_balance)
                 `)
                 .eq('barber_id', user?.id)
                 .order('start_time', { ascending: false });
@@ -201,9 +202,17 @@ function BookingsList() {
                                         </div>
                                         <div>
                                             <p className="font-semibold">{booking.profiles?.full_name || 'Anonymous Client'}</p>
-                                            <Badge variant="outline" className={getStatusColor(booking.status)}>
-                                                {booking.status}
-                                            </Badge>
+                                            <div className="flex items-center gap-2 mt-1">
+                                                <Badge variant="outline" className={getStatusColor(booking.status)}>
+                                                    {booking.status}
+                                                </Badge>
+                                                {booking.loyalty_points && booking.loyalty_points[0]?.points_balance > 0 && (
+                                                    <div className="flex items-center gap-1 text-[10px] font-black text-orange-500 bg-orange-500/10 px-2 py-0.5 rounded-full uppercase tracking-tighter">
+                                                        <Award className="w-2.5 h-2.5" />
+                                                        {booking.loyalty_points[0]?.points_balance} pts
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
 

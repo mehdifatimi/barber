@@ -6,13 +6,28 @@ import { supabase } from '@/lib/supabase/client';
 import DashboardLayout from '@/components/layout/dashboard-layout';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Star, User, Calendar } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Loader2, Star, User, Calendar, MessageSquareReply } from 'lucide-react';
 import { format } from 'date-fns';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from 'sonner';
 
 export default function ReviewsPage() {
     const { user } = useAuth();
     const [reviews, setReviews] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [replyingTo, setReplyingTo] = useState<string | null>(null);
+    const [replyText, setReplyText] = useState('');
+    const [submitting, setSubmitting] = useState(false);
 
     useEffect(() => {
         if (user) {
@@ -40,6 +55,33 @@ export default function ReviewsPage() {
             console.error('Error fetching reviews:', error);
         } finally {
             setLoading(false);
+        }
+    }
+
+    async function handleSubmitReply() {
+        if (!replyingTo || !replyText.trim()) return;
+
+        setSubmitting(true);
+        try {
+            const { error } = await supabase
+                .from('reviews')
+                .update({
+                    barber_reply: replyText,
+                    replied_at: new Date().toISOString()
+                })
+                .eq('id', replyingTo);
+
+            if (error) throw error;
+
+            toast.success('Reply saved successfully');
+            setReplyingTo(null);
+            setReplyText('');
+            fetchReviews();
+        } catch (error) {
+            console.error('Error saving reply:', error);
+            toast.error('Failed to save reply');
+        } finally {
+            setSubmitting(false);
         }
     }
 
@@ -113,9 +155,71 @@ export default function ReviewsPage() {
                                 <Badge variant="secondary" className="mb-2 text-[10px] uppercase font-bold tracking-wider">
                                     {review.bookings?.services?.name || 'Haircut Service'}
                                 </Badge>
-                                <p className="text-sm text-foreground/80 leading-relaxed italic">
+                                <p className="text-sm text-foreground/80 leading-relaxed italic mb-4">
                                     "{review.comment || 'No comment left.'}"
                                 </p>
+
+                                {review.barber_reply ? (
+                                    <div className="bg-primary/5 p-4 rounded-xl border border-primary/10 space-y-2">
+                                        <div className="flex justify-between items-center text-[10px] uppercase font-black tracking-widest text-primary">
+                                            <span>Your Reply</span>
+                                            <span className="text-muted-foreground">
+                                                {format(new Date(review.replied_at), 'MMM d, yyyy')}
+                                            </span>
+                                        </div>
+                                        <p className="text-sm italic text-foreground/70 leading-relaxed">
+                                            "{review.barber_reply}"
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <Dialog open={replyingTo === review.id} onOpenChange={(open) => {
+                                        if (!open) setReplyingTo(null);
+                                        else {
+                                            setReplyingTo(review.id);
+                                            setReplyText('');
+                                        }
+                                    }}>
+                                        <DialogTrigger asChild>
+                                            <Button variant="outline" size="sm" className="w-full h-9 rounded-xl border-primary/20 hover:bg-primary/5 text-primary text-xs font-bold gap-2">
+                                                <MessageSquareReply className="w-3.5 h-3.5" />
+                                                Reply to Review
+                                            </Button>
+                                        </DialogTrigger>
+                                        <DialogContent className="sm:max-w-[425px]">
+                                            <DialogHeader>
+                                                <DialogTitle>Reply to {review.profiles?.full_name}</DialogTitle>
+                                                <DialogDescription>
+                                                    Address the client's feedback. This response will be visible on your public profile.
+                                                </DialogDescription>
+                                            </DialogHeader>
+                                            <div className="space-y-4 py-4">
+                                                <div className="p-3 bg-muted rounded-lg text-sm italic opacity-70 border border-border">
+                                                    "{review.comment || 'No comment left.'}"
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-xs font-bold uppercase tracking-widest opacity-60">Your Message</label>
+                                                    <Textarea
+                                                        placeholder="Thank you for the review! I'm glad you enjoyed the cut..."
+                                                        rows={4}
+                                                        value={replyText}
+                                                        onChange={(e) => setReplyText(e.target.value)}
+                                                        className="rounded-xl"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <DialogFooter>
+                                                <Button
+                                                    onClick={handleSubmitReply}
+                                                    disabled={submitting || !replyText.trim()}
+                                                    className="w-full bg-primary"
+                                                >
+                                                    {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                                                    Post Reply
+                                                </Button>
+                                            </DialogFooter>
+                                        </DialogContent>
+                                    </Dialog>
+                                )}
                             </CardContent>
                         </Card>
                     ))}
